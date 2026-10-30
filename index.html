@@ -1,0 +1,1475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CivicShield AI — Smart Civic Issue Reporter</title>
+<style>
+  :root {
+    --navy: #0a2540;
+    --navy-light: #14365d;
+    --teal: #14b8a6;
+    --teal-dark: #0d9488;
+    --teal-light: #5eead4;
+    --white: #ffffff;
+    --gray-50: #f8fafc;
+    --gray-100: #f1f5f9;
+    --gray-200: #e2e8f0;
+    --gray-400: #94a3b8;
+    --gray-600: #475569;
+    --gray-800: #1e293b;
+    --danger: #ef4444;
+    --warning: #f59e0b;
+    --success: #10b981;
+    --info: #3b82f6;
+    --shadow-md: 0 4px 12px rgba(10, 37, 64, 0.08);
+    --shadow-lg: 0 12px 32px rgba(10, 37, 64, 0.12);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: linear-gradient(135deg, var(--gray-50) 0%, #e0f2f1 100%);
+    color: var(--gray-800);
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  /* HEADER */
+  header {
+    background: linear-gradient(135deg, var(--navy) 0%, var(--navy-light) 100%);
+    color: var(--white);
+    padding: 1.25rem 1.5rem;
+    box-shadow: var(--shadow-md);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .header-inner {
+    max-width: 1200px; margin: 0 auto;
+    display: flex; align-items: center; justify-content: space-between;
+    flex-wrap: wrap; gap: 1rem;
+  }
+  .logo { display: flex; align-items: center; gap: 0.75rem; font-size: 1.4rem; font-weight: 700; }
+  .logo-icon {
+    width: 40px; height: 40px;
+    background: linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%);
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 1.3rem;
+    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.4);
+  }
+  .logo-sub { font-size: 0.75rem; font-weight: 400; opacity: 0.8; display: block; }
+  nav { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+  nav button {
+    background: transparent; color: var(--white);
+    border: 1px solid rgba(255,255,255,0.15);
+    padding: 0.5rem 1rem; border-radius: var(--radius-sm);
+    cursor: pointer; font-size: 0.9rem; font-weight: 500;
+    transition: all 0.2s;
+  }
+  nav button:hover { background: rgba(255,255,255,0.1); }
+  nav button.active { background: var(--teal); border-color: var(--teal); }
+
+  /* MAIN */
+  main { max-width: 1200px; margin: 0 auto; padding: 2rem 1.5rem; }
+  .view { display: none; animation: fadeIn 0.3s ease; }
+  .view.active { display: block; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+  /* BANNERS */
+  .banner {
+    padding: 0.85rem 1rem; border-radius: var(--radius-sm);
+    margin-bottom: 1.5rem; font-size: 0.9rem;
+    display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  }
+  .banner-demo { background: linear-gradient(90deg, #fef3c7 0%, #fde68a 100%); color: #78350f; border-left: 4px solid var(--warning); }
+  .banner-live { background: linear-gradient(90deg, #d1fae5 0%, #a7f3d0 100%); color: #065f46; border-left: 4px solid var(--success); }
+  .banner.hidden { display: none; }
+  .banner button {
+    margin-left: auto; background: var(--navy); color: var(--white);
+    border: none; padding: 0.35rem 0.75rem; border-radius: 6px;
+    cursor: pointer; font-size: 0.8rem; font-weight: 600;
+  }
+
+  /* CARDS */
+  .card {
+    background: var(--white); border-radius: var(--radius);
+    padding: 1.75rem; box-shadow: var(--shadow-md);
+    margin-bottom: 1.5rem; border: 1px solid var(--gray-200);
+  }
+  .card h2 { color: var(--navy); font-size: 1.35rem; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+  .card p.subtitle { color: var(--gray-600); font-size: 0.95rem; margin-bottom: 1.5rem; }
+
+  /* CONFIG TERMINAL PANEL (matches screenshot style) */
+  .config-terminal {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    font-family: "SF Mono", Monaco, Consolas, "Courier New", monospace;
+    font-size: 0.88rem;
+    box-shadow: var(--shadow-lg);
+    border: 1px solid #313244;
+    position: relative;
+    overflow: hidden;
+  }
+  .config-terminal::before {
+    content: "";
+    position: absolute; top: 0; left: 0; right: 0; height: 32px;
+    background: #181825;
+    border-bottom: 1px solid #313244;
+  }
+  .config-terminal-header {
+    position: relative; z-index: 1;
+    display: flex; align-items: center; gap: 6px;
+    padding-bottom: 0.75rem; margin-bottom: 0.75rem;
+  }
+  .terminal-dot { width: 12px; height: 12px; border-radius: 50%; }
+  .terminal-dot.red { background: #f38ba8; }
+  .terminal-dot.yellow { background: #f9e2af; }
+  .terminal-dot.green { background: #a6e3a1; }
+  .terminal-title {
+    margin-left: 8px; color: #6c7086; font-size: 0.8rem;
+  }
+  .config-body { position: relative; z-index: 1; padding-top: 0.5rem; }
+  .config-line {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 1rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid #313244;
+    align-items: center;
+  }
+  .config-line:last-child { border-bottom: none; }
+  .config-line .label {
+    color: #89b4fa;
+    font-weight: 600;
+    display: flex; align-items: center; gap: 0.5rem;
+  }
+  .config-line .label .hash { color: #6c7086; }
+  .config-line .label .var { color: #cba6f7; }
+  .config-line .label .eq { color: #89dceb; }
+  .config-line .value {
+    background: #181825;
+    border: 1px solid #45475a;
+    border-radius: 6px;
+    padding: 0.4rem 0.7rem;
+    color: #a6e3a1;
+    font-family: inherit;
+    font-size: 0.85rem;
+    width: 100%;
+    transition: all 0.2s;
+  }
+  .config-line .value:focus {
+    outline: none;
+    border-color: var(--teal);
+    box-shadow: 0 0 0 2px rgba(20, 184, 166, 0.3);
+  }
+  .config-line .comment {
+    color: #6c7086;
+    font-style: italic;
+    font-size: 0.8rem;
+    grid-column: 1 / -1;
+    padding-left: 0.5rem;
+  }
+  .config-actions {
+    display: flex; gap: 0.75rem; margin-top: 1.25rem; flex-wrap: wrap;
+  }
+
+  /* UPLOAD */
+  .upload-zone {
+    border: 2px dashed var(--gray-200); border-radius: var(--radius);
+    padding: 2.5rem 1.5rem; text-align: center; cursor: pointer;
+    transition: all 0.25s; background: var(--gray-50);
+  }
+  .upload-zone:hover, .upload-zone.dragover { border-color: var(--teal); background: #f0fdfa; transform: translateY(-2px); }
+  .upload-zone.has-image { padding: 1rem; border-style: solid; background: var(--white); }
+  .upload-icon { font-size: 3rem; margin-bottom: 0.75rem; }
+  .upload-zone h3 { color: var(--navy); margin-bottom: 0.25rem; }
+  .upload-zone small { color: var(--gray-600); }
+  #preview { max-width: 100%; max-height: 300px; border-radius: var(--radius-sm); display: none; margin: 0 auto; }
+
+  /* CAMERA */
+  .camera-container {
+    background: #000;
+    border-radius: var(--radius);
+    overflow: hidden;
+    position: relative;
+    aspect-ratio: 16/9;
+    margin-bottom: 1rem;
+  }
+  #cameraFeed { width: 100%; height: 100%; object-fit: cover; display: none; }
+  .camera-overlay {
+    position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--white); font-size: 1.1rem;
+    background: rgba(10, 37, 64, 0.7);
+  }
+  .camera-overlay.hidden { display: none; }
+  .camera-status {
+    position: absolute; top: 12px; left: 12px;
+    background: rgba(0,0,0,0.7); color: var(--white);
+    padding: 0.35rem 0.75rem; border-radius: 20px;
+    font-size: 0.8rem; font-weight: 600;
+    display: flex; align-items: center; gap: 0.4rem;
+  }
+  .camera-status .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--gray-400);
+  }
+  .camera-status.live .dot { background: var(--danger); animation: pulse 1s infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+  .camera-controls {
+    display: flex; gap: 0.75rem; flex-wrap: wrap;
+  }
+  .change-meter {
+    margin-top: 0.75rem;
+    background: var(--gray-100);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+    display: none;
+  }
+  .change-meter.active { display: block; }
+  .change-meter-label {
+    font-size: 0.8rem; color: var(--gray-600);
+    display: flex; justify-content: space-between; margin-bottom: 0.4rem;
+  }
+  .change-bar {
+    height: 6px; background: var(--gray-200); border-radius: 3px; overflow: hidden;
+  }
+  .change-fill {
+    height: 100%; background: linear-gradient(90deg, var(--teal), var(--danger));
+    transition: width 0.3s;
+    width: 0%;
+  }
+
+  /* LOCATION */
+  .location-box {
+    background: linear-gradient(135deg, #f0fdfa 0%, #ecfeff 100%);
+    border: 1px solid var(--teal-light);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.25rem; margin-top: 1rem;
+  }
+  .location-header {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;
+  }
+  .location-header h4 { color: var(--navy); font-size: 0.95rem; display: flex; align-items: center; gap: 0.4rem; }
+  .live-dot {
+    width: 8px; height: 8px; background: var(--success);
+    border-radius: 50%; display: inline-block; animation: pulse 1.5s infinite;
+  }
+  .location-details { font-size: 0.88rem; color: var(--gray-600); line-height: 1.6; }
+  .location-details strong { color: var(--navy); }
+  .map-embed {
+    margin-top: 0.75rem; border-radius: var(--radius-sm);
+    overflow: hidden; border: 1px solid var(--gray-200);
+    height: 180px; background: var(--gray-100); display: none;
+  }
+  .map-embed iframe { width: 100%; height: 100%; border: 0; }
+
+  /* BUTTONS */
+  .btn {
+    padding: 0.75rem 1.5rem; border: none; border-radius: var(--radius-sm);
+    font-size: 0.95rem; font-weight: 600; cursor: pointer;
+    transition: all 0.2s; display: inline-flex; align-items: center; gap: 0.5rem;
+    justify-content: center;
+  }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn-primary {
+    background: linear-gradient(135deg, var(--teal) 0%, var(--teal-dark) 100%);
+    color: var(--white); box-shadow: 0 4px 12px rgba(20, 184, 166, 0.3);
+  }
+  .btn-primary:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 16px rgba(20, 184, 166, 0.4); }
+  .btn-secondary { background: var(--navy); color: var(--white); }
+  .btn-secondary:hover:not(:disabled) { background: var(--navy-light); }
+  .btn-ghost { background: transparent; color: var(--navy); border: 1px solid var(--gray-200); }
+  .btn-ghost:hover { background: var(--gray-100); }
+  .btn-sm { padding: 0.45rem 0.85rem; font-size: 0.85rem; }
+  .btn-danger { background: var(--danger); color: var(--white); }
+  .btn-row { display: flex; gap: 0.75rem; flex-wrap: wrap; margin-top: 1.25rem; }
+
+  /* RESULTS */
+  #results { display: none; margin-top: 1.5rem; }
+  .result-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 1rem; margin-bottom: 1.25rem;
+  }
+  .stat-box {
+    background: linear-gradient(135deg, var(--gray-50) 0%, var(--white) 100%);
+    padding: 1rem; border-radius: var(--radius-sm); border: 1px solid var(--gray-200);
+  }
+  .stat-label {
+    font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.05em;
+    color: var(--gray-600); font-weight: 600; margin-bottom: 0.35rem;
+  }
+  .stat-value { font-size: 1.2rem; font-weight: 700; color: var(--navy); }
+  .severity-meter { height: 8px; background: var(--gray-200); border-radius: 4px; overflow: hidden; margin-top: 0.5rem; }
+  .severity-fill { height: 100%; border-radius: 4px; transition: width 0.6s ease; }
+  .sev-low { background: var(--success); }
+  .sev-medium { background: var(--warning); }
+  .sev-high { background: #f97316; }
+  .sev-critical { background: var(--danger); }
+  .issue-badge {
+    display: inline-block; padding: 0.3rem 0.8rem; border-radius: 20px;
+    font-size: 0.85rem; font-weight: 600; text-transform: capitalize;
+  }
+  .badge-pothole { background: #fee2e2; color: #991b1b; }
+  .badge-garbage { background: #fef3c7; color: #92400e; }
+  .badge-road_damage { background: #dbeafe; color: #1e40af; }
+  .badge-unknown { background: #e5e7eb; color: #374151; }
+
+  /* REPORT */
+  .report-box {
+    background: var(--gray-50); border: 1px solid var(--gray-200);
+    border-left: 4px solid var(--teal); border-radius: var(--radius-sm);
+    padding: 1.25rem; font-family: "SF Mono", Monaco, Consolas, monospace;
+    font-size: 0.88rem; white-space: pre-wrap; color: var(--gray-800);
+    line-height: 1.7; max-height: 400px; overflow-y: auto;
+  }
+
+  .qwen-section {
+    background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%);
+    border: 1px solid #93c5fd; border-radius: var(--radius-sm);
+    padding: 1.25rem; margin-top: 1rem;
+  }
+  .qwen-section h4 { color: var(--navy); margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.5rem; }
+  .qwen-section p { font-size: 0.88rem; color: var(--gray-600); margin-bottom: 0.75rem; }
+  .qwen-output {
+    background: var(--white); border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm); padding: 1rem;
+    font-size: 0.9rem; line-height: 1.6; color: var(--gray-800);
+    margin-top: 0.75rem; display: none; white-space: pre-wrap;
+  }
+
+  /* LOADER */
+  .loader { display: none; text-align: center; padding: 2rem; }
+  .loader.active { display: block; }
+  .spinner {
+    width: 48px; height: 48px;
+    border: 4px solid var(--gray-200); border-top-color: var(--teal);
+    border-radius: 50%; animation: spin 0.8s linear infinite;
+    margin: 0 auto 1rem;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* DASHBOARD */
+  .stats-row {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 1rem; margin-bottom: 1.5rem;
+  }
+  .stat-card {
+    background: var(--white); padding: 1.25rem;
+    border-radius: var(--radius-sm); border: 1px solid var(--gray-200); text-align: center;
+  }
+  .stat-card .num { font-size: 2rem; font-weight: 700; color: var(--teal); }
+  .stat-card .label { font-size: 0.8rem; color: var(--gray-600); text-transform: uppercase; letter-spacing: 0.05em; margin-top: 0.25rem; }
+  .filter-tabs { display: flex; gap: 0.5rem; margin-bottom: 1.25rem; flex-wrap: wrap; }
+  .filter-tabs button {
+    background: var(--white); border: 1px solid var(--gray-200);
+    padding: 0.5rem 1rem; border-radius: 20px; cursor: pointer;
+    font-size: 0.85rem; font-weight: 500; color: var(--gray-600); transition: all 0.2s;
+  }
+  .filter-tabs button.active { background: var(--navy); color: var(--white); border-color: var(--navy); }
+  .report-list { display: flex; flex-direction: column; gap: 0.75rem; }
+  .report-item {
+    background: var(--white); border: 1px solid var(--gray-200);
+    border-radius: var(--radius-sm); padding: 1rem 1.25rem;
+    display: grid; grid-template-columns: 80px 1fr auto;
+    gap: 1rem; align-items: center; transition: all 0.2s;
+  }
+  .report-item:hover { box-shadow: var(--shadow-md); transform: translateY(-2px); }
+  .report-thumb { width: 80px; height: 80px; border-radius: var(--radius-sm); object-fit: cover; background: var(--gray-100); }
+  .report-info h4 { color: var(--navy); font-size: 1rem; margin-bottom: 0.25rem; }
+  .report-meta { font-size: 0.8rem; color: var(--gray-600); display: flex; gap: 1rem; flex-wrap: wrap; margin-top: 0.35rem; }
+  .report-actions { display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-end; }
+  .status-select {
+    padding: 0.35rem 0.6rem; border: 1px solid var(--gray-200);
+    border-radius: 6px; font-size: 0.8rem; cursor: pointer; background: var(--white);
+  }
+  .status-pending { background: #fef3c7; color: #92400e; }
+  .status-progress { background: #dbeafe; color: #1e40af; }
+  .status-resolved { background: #d1fae5; color: #065f46; }
+  .empty-state { text-align: center; padding: 3rem 1rem; color: var(--gray-600); }
+  .empty-state .icon { font-size: 3rem; margin-bottom: 0.75rem; }
+
+  /* SETUP */
+  .api-setup {
+    background: linear-gradient(135deg, #f0fdfa 0%, #ecfeff 100%);
+    border: 1px solid var(--teal-light); border-radius: var(--radius);
+    padding: 1.5rem; margin-top: 1rem;
+  }
+  .api-setup h3 { color: var(--navy); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.5rem; }
+  .api-setup ol { padding-left: 1.25rem; color: var(--gray-600); font-size: 0.9rem; line-height: 1.8; }
+  .api-setup code {
+    background: var(--white); padding: 0.15rem 0.4rem; border-radius: 4px;
+    font-size: 0.85rem; color: var(--teal-dark); border: 1px solid var(--gray-200);
+  }
+  .api-input {
+    width: 100%; padding: 0.65rem 0.9rem;
+    border: 1px solid var(--gray-200); border-radius: var(--radius-sm);
+    font-size: 0.9rem; margin-top: 0.75rem;
+    font-family: "SF Mono", Monaco, monospace;
+  }
+  .api-input:focus { outline: none; border-color: var(--teal); box-shadow: 0 0 0 3px rgba(20, 184, 166, 0.15); }
+  .feature-grid {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1rem; margin-top: 1rem;
+  }
+  .feature {
+    background: var(--white); padding: 1.25rem;
+    border-radius: var(--radius-sm); border: 1px solid var(--gray-200);
+  }
+  .feature .icon { font-size: 1.8rem; margin-bottom: 0.5rem; }
+  .feature h4 { color: var(--navy); margin-bottom: 0.35rem; font-size: 1rem; }
+  .feature p { color: var(--gray-600); font-size: 0.88rem; }
+
+  /* TOAST */
+  .toast {
+    position: fixed; bottom: 2rem; right: 2rem;
+    background: var(--navy); color: var(--white);
+    padding: 0.85rem 1.25rem; border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-lg);
+    transform: translateY(100px); opacity: 0; transition: all 0.3s;
+    z-index: 1000; font-size: 0.9rem; max-width: 320px;
+  }
+  .toast.show { transform: translateY(0); opacity: 1; }
+  .toast.success { background: var(--success); }
+  .toast.error { background: var(--danger); }
+
+  @media (max-width: 640px) {
+    main { padding: 1rem; }
+    .card { padding: 1.25rem; }
+    .report-item { grid-template-columns: 60px 1fr; grid-template-rows: auto auto; }
+    .report-thumb { width: 60px; height: 60px; grid-row: span 2; }
+    .report-actions { grid-column: 1 / -1; flex-direction: row; justify-content: space-between; align-items: center; }
+    .logo { font-size: 1.15rem; }
+    .logo-icon { width: 34px; height: 34px; font-size: 1.1rem; }
+    nav button { padding: 0.4rem 0.75rem; font-size: 0.82rem; }
+    .config-line { grid-template-columns: 1fr; gap: 0.3rem; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-inner">
+    <div class="logo">
+      <div class="logo-icon">️</div>
+      <div>CivicShield AI<span class="logo-sub">Smart Civic Issue Reporter</span></div>
+    </div>
+    <nav>
+      <button class="nav-btn active" data-view="report">📸 Report</button>
+      <button class="nav-btn" data-view="camera">📹 Live Camera</button>
+      <button class="nav-btn" data-view="dashboard">📊 Dashboard</button>
+      <button class="nav-btn" data-view="config">⚙️ Config</button>
+      <button class="nav-btn" data-view="setup">🔑 Setup</button>
+    </nav>
+  </div>
+</header>
+
+<main>
+  <!-- BANNERS -->
+  <div id="demoBanner" class="banner banner-demo">
+    <span>⚠️</span>
+    <span><strong>Demo Mode:</strong> AI classification is simulated. Configure local Qwen in the <strong>Config</strong> tab for real AI.</span>
+    <button onclick="switchView('config')">Open Config →</button>
+  </div>
+  <div id="liveBanner" class="banner banner-live hidden">
+    <span>🟢</span>
+    <span id="liveBannerText"><strong>Live AI Active:</strong> Local Qwen 3.5:4b connected.</span>
+  </div>
+
+  <!-- ============ REPORT VIEW ============ -->
+  <section id="view-report" class="view active">
+    <div class="card">
+      <h2>📸 Report a Civic Issue</h2>
+      <p class="subtitle">Upload a photo, capture your live location, and let AI classify the issue instantly.</p>
+
+      <div id="uploadZone" class="upload-zone">
+        <div id="uploadPrompt">
+          <div class="upload-icon">📷</div>
+          <h3>Drop an image here or click to upload</h3>
+          <small>Supports JPG, PNG, WEBP • Max 10MB</small>
+        </div>
+        <img id="preview" alt="Preview" />
+        <input type="file" id="fileInput" accept="image/*" hidden />
+      </div>
+
+      <!-- LOCATION -->
+      <div class="location-box">
+        <div class="location-header">
+          <h4><span class="live-dot"></span> Live Location</h4>
+          <button id="getLocationBtn" class="btn btn-sm btn-primary">📍 Capture GPS</button>
+        </div>
+        <div id="locationDetails" class="location-details">
+          Location not captured yet. Click <strong>Capture GPS</strong> to detect your current position.
+        </div>
+        <div id="mapEmbed" class="map-embed"></div>
+      </div>
+
+      <div class="btn-row">
+        <button id="analyzeBtn" class="btn btn-primary" disabled>🔍 Analyze with AI</button>
+        <button id="resetBtn" class="btn btn-ghost" style="display:none;">↺ Upload Another</button>
+      </div>
+
+      <div id="loader" class="loader">
+        <div class="spinner"></div>
+        <p id="loaderText" style="color: var(--gray-600);">Analyzing image...</p>
+      </div>
+
+      <div id="results">
+        <h3 style="color: var(--navy); margin: 1.5rem 0 1rem;">📋 Analysis Results</h3>
+        <div class="result-grid">
+          <div class="stat-box"><div class="stat-label">Issue Type</div><div class="stat-value" id="resType">—</div></div>
+          <div class="stat-box"><div class="stat-label">Severity</div><div class="stat-value" id="resSeverity">—</div>
+            <div class="severity-meter"><div id="sevFill" class="severity-fill" style="width: 0%;"></div></div>
+          </div>
+          <div class="stat-box"><div class="stat-label">Confidence</div><div class="stat-value" id="resConfidence">—</div></div>
+          <div class="stat-box"><div class="stat-label">Priority</div><div class="stat-value" id="resPriority">—</div></div>
+        </div>
+        <p id="resDescription" style="color: var(--gray-600); margin-bottom: 1rem;"></p>
+
+        <h3 style="color: var(--navy); margin: 1.5rem 0 1rem;">📝 Generated Complaint Report</h3>
+        <div id="reportBox" class="report-box"></div>
+
+        <div class="qwen-section">
+          <h4>🤖 Enhance with Local Qwen 3.5:4b</h4>
+          <p>Ask your locally-running Qwen model to rewrite the complaint in a more formal, official tone.</p>
+          <button id="qwenBtn" class="btn btn-sm btn-secondary">✨ Generate with Qwen</button>
+          <div id="qwenOutput" class="qwen-output"></div>
+        </div>
+
+        <div class="btn-row">
+          <button id="saveBtn" class="btn btn-primary">💾 Save to Dashboard</button>
+          <button id="copyBtn" class="btn btn-secondary">📋 Copy Report</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CAMERA VIEW ============ -->
+  <section id="view-camera" class="view">
+    <div class="card">
+      <h2> Live Camera Detection</h2>
+      <p class="subtitle">Point your camera at a civic issue. Auto-detects frame changes and sends to local Qwen for analysis.</p>
+
+      <div class="camera-container">
+        <video id="cameraFeed" autoplay playsinline muted></video>
+        <canvas id="cameraCanvas" style="display:none;"></canvas>
+        <div id="cameraOverlay" class="camera-overlay">
+          <div style="text-align:center;">
+            <div style="font-size: 3rem; margin-bottom: 0.5rem;"></div>
+            <div>Camera is off</div>
+          </div>
+        </div>
+        <div id="cameraStatus" class="camera-status" style="display:none;">
+          <span class="dot"></span>
+          <span id="cameraStatusText">Initializing...</span>
+        </div>
+      </div>
+
+      <div class="camera-controls">
+        <button id="startCameraBtn" class="btn btn-primary">▶️ Start Camera</button>
+        <button id="stopCameraBtn" class="btn btn-ghost" disabled>⏹️ Stop</button>
+        <button id="captureBtn" class="btn btn-secondary" disabled>📸 Capture Frame</button>
+        <button id="autoDetectBtn" class="btn btn-ghost" disabled> Toggle Auto-Detect</button>
+      </div>
+
+      <div id="changeMeter" class="change-meter">
+        <div class="change-meter-label">
+          <span>Frame Change Score</span>
+          <span id="changeValue">0.0</span>
+        </div>
+        <div class="change-bar"><div id="changeFill" class="change-fill"></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ CONFIG VIEW (matches screenshot) ============ -->
+  <section id="view-config" class="view">
+    <div class="card">
+      <h2>⚙️ Local AI Configuration</h2>
+      <p class="subtitle">Tune your local Qwen model, camera, and detection parameters. All settings persist in your browser.</p>
+
+      <div class="config-terminal">
+        <div class="config-terminal-header">
+          <span class="terminal-dot red"></span>
+          <span class="terminal-dot yellow"></span>
+          <span class="terminal-dot green"></span>
+          <span class="terminal-title">config.py — CivicShield AI</span>
+        </div>
+        <div class="config-body">
+
+          <div class="config-line">
+            <div class="label"><span class="hash">#</span> <span class="var">MODEL</span> <span class="eq">=</span></div>
+            <input type="text" class="value" id="cfg_model" value="qwen3.5:4b" />
+          </div>
+          <div class="config-line">
+            <div class="comment"># Local AI model name (Ollama)</div>
+          </div>
+
+          <div class="config-line">
+            <div class="label"><span class="hash">#</span> <span class="var">API_URL</span> <span class="eq">=</span></div>
+            <input type="text" class="value" id="cfg_api_url" value="http://localhost:11434/api/chat" />
+          </div>
+          <div class="config-line">
+            <div class="comment"># Ollama chat endpoint</div>
+          </div>
+
+          <div class="config-line">
+            <div class="label"><span class="hash">#</span> <span class="var">CAMERA_INDEX</span> <span class="eq">=</span></div>
+            <input type="number" class="value" id="cfg_camera_index" value="0" min="0" max="5" />
+          </div>
+          <div class="config-line">
+            <div class="comment"># Webcam device index (0 = default)</div>
+          </div>
+
+          <div class="config-line">
+            <div class="label"><span class="hash">#</span> <span class="var">FRAME_CHECK_SECONDS</span> <span class="eq">=</span></div>
+            <input type="number" class="value" id="cfg_frame_check" value="1.0" step="0.1" min="0.1" />
+          </div>
+          <div class="config-line">
+            <div class="comment"># Cheap local frame-change detection interval</div>
+          </div>
+
+          <div class="config-line">
+            <div class="label"><span class="hash">#</span> <span class="var">VISION_COOLDOWN_SECONDS</span> <span class="eq">=</span></div>
+            <input type="number" class="value" id="cfg_vision_cooldown" value="15.0" step="1" min="1" />
+          </div>
+          <div class="config-line">
+            <div class="comment"># Avoid repeated slow vision calls</div>
+          </div>
+
+          <div class="config-line">
+            <div class="label"><span class="hash">#</span> <span class="var">MIN_CHANGE_SCORE</span> <span class="eq">=</span></div>
+            <input type="number" class="value" id="cfg_min_change" value="10.0" step="0.5" min="0" />
+          </div>
+          <div class="config-line">
+            <div class="comment"># Ignore small lighting/noise changes</div>
+          </div>
+
+          <div class="config-line">
+            <div class="label"><span class="hash">#</span> <span class="var">MAX_SPOKEN_CHARS</span> <span class="eq">=</span></div>
+            <input type="number" class="value" id="cfg_max_chars" value="260" min="50" max="1000" />
+          </div>
+          <div class="config-line">
+            <div class="comment"># Keep spoken updates short</div>
+          </div>
+
+          <div class="config-actions">
+            <button id="saveConfigBtn" class="btn btn-primary">💾 Save Configuration</button>
+            <button id="resetConfigBtn" class="btn btn-ghost">↺ Reset Defaults</button>
+            <button id="testConnectionBtn" class="btn btn-secondary">🧪 Test AI Connection</button>
+          </div>
+        </div>
+      </div>
+
+      <div style="margin-top: 1.5rem;">
+        <h3 style="color: var(--navy); margin-bottom: 0.75rem;">📖 How It Works</h3>
+        <div class="feature-grid">
+          <div class="feature">
+            <div class="icon">🎥</div>
+            <h4>1. Camera Feed</h4>
+            <p>Captures frames at <code>FRAME_CHECK_SECONDS</code> intervals from your webcam.</p>
+          </div>
+          <div class="feature">
+            <div class="icon">📊</div>
+            <h4>2. Change Detection</h4>
+            <p>Compares pixel differences. If score &gt; <code>MIN_CHANGE_SCORE</code>, triggers AI.</p>
+          </div>
+          <div class="feature">
+            <div class="icon">🧠</div>
+            <h4>3. Local Qwen</h4>
+            <p>Sends frame to <code>MODEL</code> via <code>API_URL</code>. 100% offline, private.</p>
+          </div>
+          <div class="feature">
+            <div class="icon">⏱️</div>
+            <h4>4. Cooldown</h4>
+            <p>Waits <code>VISION_COOLDOWN_SECONDS</code> before next analysis to save resources.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ DASHBOARD VIEW ============ -->
+  <section id="view-dashboard" class="view">
+    <div class="card">
+      <h2>📊 Complaint Dashboard</h2>
+      <p class="subtitle">Track the status of all your reported civic issues.</p>
+
+      <div class="stats-row">
+        <div class="stat-card"><div class="num" id="statTotal">0</div><div class="label">Total Reports</div></div>
+        <div class="stat-card"><div class="num" id="statPending">0</div><div class="label">Pending</div></div>
+        <div class="stat-card"><div class="num" id="statProgress">0</div><div class="label">In Progress</div></div>
+        <div class="stat-card"><div class="num" id="statResolved">0</div><div class="label">Resolved</div></div>
+      </div>
+
+      <div class="filter-tabs">
+        <button class="filter-btn active" data-filter="all">All</button>
+        <button class="filter-btn" data-filter="Pending"> Pending</button>
+        <button class="filter-btn" data-filter="In Progress">🔧 In Progress</button>
+        <button class="filter-btn" data-filter="Resolved">✅ Resolved</button>
+      </div>
+
+      <div id="reportList" class="report-list"></div>
+      <div id="emptyState" class="empty-state" style="display:none;">
+        <div class="icon">📭</div>
+        <h3>No reports yet</h3>
+        <p>Upload your first civic issue photo to get started.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ SETUP VIEW ============ -->
+  <section id="view-setup" class="view">
+    <div class="card">
+      <h2>🔑 Quick Setup</h2>
+      <p class="subtitle">Get the local AI running in 3 minutes.</p>
+
+      <div class="api-setup">
+        <h3>🧠 Install Local Qwen 3.5:4b</h3>
+        <ol>
+          <li>Install Ollama from <a href="https://ollama.com" target="_blank" style="color: var(--teal-dark);">ollama.com</a>.</li>
+          <li>Open terminal and run: <code>ollama pull qwen3.5:4b</code></li>
+          <li>Start the server: <code>ollama serve</code></li>
+          <li>Open the <strong>Config</strong> tab to tune parameters.</li>
+          <li>Serve this HTML via <code>python -m http.server 8000</code> to avoid CORS.</li>
+        </ol>
+      </div>
+
+      <div class="api-setup" style="margin-top: 1rem; background: linear-gradient(135deg, #eff6ff 0%, #dbeafe 100%); border-color: #93c5fd;">
+        <h3>👁️ Optional: Google Gemini Vision</h3>
+        <ol>
+          <li>Visit <a href="https://aistudio.google.com/apikey" target="_blank" style="color: var(--teal-dark);">Google AI Studio</a>.</li>
+          <li>Click <strong>"Create API Key"</strong> — free tier available.</li>
+          <li>Paste below and save.</li>
+        </ol>
+        <input id="geminiKeyInput" class="api-input" type="password" placeholder="Paste your Gemini API key here..." />
+        <div class="btn-row">
+          <button id="saveGeminiBtn" class="btn btn-primary btn-sm">💾 Save Gemini Key</button>
+          <button id="clearGeminiBtn" class="btn btn-ghost btn-sm">️ Clear</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<script>
+/* ============================================================
+   CivicShield AI — Core Logic
+   ============================================================ */
+const STORAGE_KEY = 'civicshield_reports';
+const GEMINI_KEY_STORAGE = 'civicshield_gemini_key';
+const CONFIG_STORAGE = 'civicshield_config';
+
+const DEFAULT_CONFIG = {
+  model: 'qwen3.5:4b',
+  api_url: 'http://localhost:11434/api/chat',
+  camera_index: 0,
+  frame_check_seconds: 1.0,
+  vision_cooldown_seconds: 15.0,
+  min_change_score: 10.0,
+  max_spoken_chars: 260
+};
+
+let currentImage = null;
+let currentAnalysis = null;
+let currentLocation = null;
+let currentFilter = 'all';
+
+/* ---------- View Switching ---------- */
+document.querySelectorAll('.nav-btn').forEach(btn => {
+  btn.addEventListener('click', () => switchView(btn.dataset.view));
+});
+function switchView(view) {
+  document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById(`view-${view}`).classList.add('active');
+  document.querySelector(`.nav-btn[data-view="${view}"]`).classList.add('active');
+  if (view === 'dashboard') renderDashboard();
+  if (view === 'config') loadConfigUI();
+}
+
+/* ---------- Toast ---------- */
+function toast(msg, type = '') {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.className = 'toast show ' + type;
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+/* ---------- Config Management ---------- */
+function getConfig() {
+  try {
+    const saved = localStorage.getItem(CONFIG_STORAGE);
+    return saved ? { ...DEFAULT_CONFIG, ...JSON.parse(saved) } : { ...DEFAULT_CONFIG };
+  } catch { return { ...DEFAULT_CONFIG }; }
+}
+function saveConfig(cfg) {
+  localStorage.setItem(CONFIG_STORAGE, JSON.stringify(cfg));
+}
+
+function loadConfigUI() {
+  const cfg = getConfig();
+  document.getElementById('cfg_model').value = cfg.model;
+  document.getElementById('cfg_api_url').value = cfg.api_url;
+  document.getElementById('cfg_camera_index').value = cfg.camera_index;
+  document.getElementById('cfg_frame_check').value = cfg.frame_check_seconds;
+  document.getElementById('cfg_vision_cooldown').value = cfg.vision_cooldown_seconds;
+  document.getElementById('cfg_min_change').value = cfg.min_change_score;
+  document.getElementById('cfg_max_chars').value = cfg.max_spoken_chars;
+}
+
+document.getElementById('saveConfigBtn').addEventListener('click', () => {
+  const cfg = {
+    model: document.getElementById('cfg_model').value.trim(),
+    api_url: document.getElementById('cfg_api_url').value.trim(),
+    camera_index: parseInt(document.getElementById('cfg_camera_index').value) || 0,
+    frame_check_seconds: parseFloat(document.getElementById('cfg_frame_check').value) || 1.0,
+    vision_cooldown_seconds: parseFloat(document.getElementById('cfg_vision_cooldown').value) || 15.0,
+    min_change_score: parseFloat(document.getElementById('cfg_min_change').value) || 10.0,
+    max_spoken_chars: parseInt(document.getElementById('cfg_max_chars').value) || 260
+  };
+  saveConfig(cfg);
+  toast('Configuration saved', 'success');
+  updateBanners();
+});
+
+document.getElementById('resetConfigBtn').addEventListener('click', () => {
+  if (!confirm('Reset all config to defaults?')) return;
+  localStorage.removeItem(CONFIG_STORAGE);
+  loadConfigUI();
+  toast('Configuration reset', 'success');
+});
+
+document.getElementById('testConnectionBtn').addEventListener('click', async () => {
+  const cfg = getConfig();
+  const baseUrl = cfg.api_url.replace('/api/chat', '');
+  toast('Testing connection to ' + baseUrl + '...');
+  try {
+    const res = await fetch(`${baseUrl}/api/tags`);
+    if (!res.ok) throw new Error(`Status ${res.status}`);
+    const data = await res.json();
+    const models = (data.models || []).map(m => m.name).join(', ') || 'none';
+    const hasModel = (data.models || []).some(m => m.name === cfg.model);
+    toast(hasModel ? `✓ Connected! Model "${cfg.model}" found.` : `✓ Connected but "${cfg.model}" not found. Available: ${models}`, hasModel ? 'success' : 'error');
+  } catch (err) {
+    toast('✗ Cannot reach Ollama: ' + err.message, 'error');
+  }
+});
+
+/* ---------- Upload Handling ---------- */
+const uploadZone = document.getElementById('uploadZone');
+const fileInput = document.getElementById('fileInput');
+const preview = document.getElementById('preview');
+const uploadPrompt = document.getElementById('uploadPrompt');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const resetBtn = document.getElementById('resetBtn');
+
+uploadZone.addEventListener('click', () => fileInput.click());
+uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('dragover'); });
+uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('dragover'));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault(); uploadZone.classList.remove('dragover');
+  if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+function handleFile(file) {
+  if (!file.type.startsWith('image/')) { toast('Please upload an image file', 'error'); return; }
+  if (file.size > 10 * 1024 * 1024) { toast('Image must be under 10MB', 'error'); return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    currentImage = { dataUrl: e.target.result, file, name: file.name };
+    preview.src = e.target.result;
+    preview.style.display = 'block';
+    uploadPrompt.style.display = 'none';
+    uploadZone.classList.add('has-image');
+    analyzeBtn.disabled = false;
+    resetBtn.style.display = 'inline-flex';
+    document.getElementById('results').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+}
+
+resetBtn.addEventListener('click', () => {
+  currentImage = null; currentAnalysis = null;
+  preview.style.display = 'none';
+  uploadPrompt.style.display = 'block';
+  uploadZone.classList.remove('has-image');
+  analyzeBtn.disabled = true;
+  resetBtn.style.display = 'none';
+  fileInput.value = '';
+  document.getElementById('results').style.display = 'none';
+});
+
+/* ============================================================
+   LIVE GPS + REVERSE GEOCODING
+   ============================================================ */
+document.getElementById('getLocationBtn').addEventListener('click', getLocation);
+
+async function getLocation() {
+  const details = document.getElementById('locationDetails');
+  const mapEmbed = document.getElementById('mapEmbed');
+  const btn = document.getElementById('getLocationBtn');
+
+  if (!navigator.geolocation) { toast('Geolocation not supported', 'error'); return; }
+
+  btn.disabled = true; btn.textContent = '📡 Locating...';
+  details.innerHTML = '<strong>📡</strong> Requesting GPS coordinates...';
+
+  navigator.geolocation.getCurrentPosition(
+    async (pos) => {
+      const { latitude, longitude, accuracy } = pos.coords;
+      currentLocation = { lat: latitude, lng: longitude, accuracy };
+
+      details.innerHTML = `
+        <strong>📍 Coordinates:</strong> ${latitude.toFixed(6)}, ${longitude.toFixed(6)}<br>
+        <strong>🎯 Accuracy:</strong> ±${Math.round(accuracy)} meters<br>
+        <strong>🕐 Captured:</strong> ${new Date().toLocaleString()}<br>
+        <strong>🗺️</strong> Reverse geocoding address...
+      `;
+
+      try {
+        const geoRes = await fetch(
+          `https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}&zoom=18&addressdetails=1`,
+          { headers: { 'Accept': 'application/json' } }
+        );
+        const geoData = await geoRes.json();
+        const addr = geoData.address || {};
+        const fullAddress = geoData.display_name || 'Address unavailable';
+        currentLocation.address = fullAddress;
+        currentLocation.area = [addr.road, addr.suburb, addr.city, addr.state, addr.country].filter(Boolean).join(', ');
+
+        details.innerHTML = `
+          <strong>📍 Coordinates:</strong> ${latitude.toFixed(6)}, ${longitude.toFixed(6)}<br>
+          <strong>🎯 Accuracy:</strong> ±${Math.round(accuracy)} meters<br>
+          <strong>🏘️ Area:</strong> ${currentLocation.area || 'Unknown'}<br>
+          <strong>📮 Full Address:</strong> ${fullAddress}<br>
+          <strong> Captured:</strong> ${new Date().toLocaleString()}
+        `;
+
+        mapEmbed.style.display = 'block';
+        mapEmbed.innerHTML = `<iframe src="https://www.openstreetmap.org/export/embed.html?bbox=${longitude-0.003},${latitude-0.002},${longitude+0.003},${latitude+0.002}&layer=mapnik&marker=${latitude},${longitude}"></iframe>`;
+      } catch (err) {
+        details.innerHTML += '<br><strong>⚠️</strong> Could not fetch address.';
+      }
+
+      btn.disabled = false; btn.textContent = ' Refresh GPS';
+      toast('Location captured', 'success');
+    },
+    (err) => {
+      btn.disabled = false; btn.textContent = '📍 Capture GPS';
+      details.innerHTML = `<strong>❌ Error:</strong> ${err.message}`;
+      toast('Location access denied', 'error');
+    },
+    { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+  );
+}
+
+/* ============================================================
+   AI ANALYSIS — Qwen Local + Gemini Fallback + Demo
+   ============================================================ */
+analyzeBtn.addEventListener('click', analyzeImage);
+
+async function analyzeImage() {
+  if (!currentImage) return;
+  const loader = document.getElementById('loader');
+  const loaderText = document.getElementById('loaderText');
+  const results = document.getElementById('results');
+  results.style.display = 'none';
+  loader.classList.add('active');
+  analyzeBtn.disabled = true;
+
+  const cfg = getConfig();
+  const geminiKey = localStorage.getItem(GEMINI_KEY_STORAGE);
+
+  try {
+    let analysis;
+    // Priority: Local Qwen > Gemini > Demo
+    if (await isQwenAvailable(cfg)) {
+      loaderText.textContent = `🧠 Sending to local ${cfg.model}...`;
+      analysis = await callQwenVision(currentImage.dataUrl, cfg);
+    } else if (geminiKey) {
+      loaderText.textContent = ' Sending image to Gemini Vision...';
+      analysis = await callGeminiVision(currentImage.dataUrl, geminiKey);
+    } else {
+      loaderText.textContent = '🎭 Running in demo mode...';
+      await new Promise(r => setTimeout(r, 1200));
+      analysis = simulateDemoAnalysis();
+    }
+    currentAnalysis = analysis;
+    renderResults(analysis);
+    results.style.display = 'block';
+    toast('Analysis complete', 'success');
+  } catch (err) {
+    console.error(err);
+    toast('Analysis failed: ' + err.message, 'error');
+  } finally {
+    loader.classList.remove('active');
+    analyzeBtn.disabled = false;
+  }
+}
+
+async function isQwenAvailable(cfg) {
+  try {
+    const baseUrl = cfg.api_url.replace('/api/chat', '');
+    const res = await fetch(`${baseUrl}/api/tags`, { signal: AbortSignal.timeout(2000) });
+    if (!res.ok) return false;
+    const data = await res.json();
+    return (data.models || []).some(m => m.name === cfg.model);
+  } catch { return false; }
+}
+
+async function callQwenVision(dataUrl, cfg) {
+  // Qwen 3.5:4b supports vision via base64 image in messages
+  const prompt = `You are a civic issue classifier. Analyze this image and respond with ONLY valid JSON (no markdown):
+{"issue_type":"pothole|garbage|road_damage|unknown","severity":"low|medium|high|critical","confidence":0.0-1.0,"description":"1-2 sentence description","suggested_department":"Department name"}`;
+
+  const res = await fetch(cfg.api_url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: cfg.model,
+      messages: [{
+        role: 'user',
+        content: prompt,
+        images: [dataUrl.split(',')[1]]
+      }],
+      stream: false,
+      options: { temperature: 0.2 }
+    })
+  });
+
+  if (!res.ok) throw new Error(`Qwen error: ${res.status}`);
+  const data = await res.json();
+  const text = data.message?.content || '{}';
+  // Extract JSON from possible markdown
+  const jsonMatch = text.match(/\{[\s\S]*\}/);
+  const parsed = JSON.parse(jsonMatch ? jsonMatch[0] : '{}');
+
+  return {
+    issue_type: parsed.issue_type || 'unknown',
+    severity: parsed.severity || 'medium',
+    confidence: parsed.confidence || 0.75,
+    description: parsed.description || 'Issue detected.',
+    suggested_department: parsed.suggested_department || 'Municipal Corporation',
+    source: 'qwen-local'
+  };
+}
+
+async function callGeminiVision(dataUrl, apiKey) {
+  const base64 = dataUrl.split(',')[1];
+  const mimeType = dataUrl.match(/data:(.*);base64/)[1];
+  const prompt = `You are a civic issue classifier. Analyze this image and return ONLY a valid JSON object (no markdown) with these exact fields: {"issue_type":"pothole|garbage|road_damage|unknown","severity":"low|medium|high|critical","confidence":0.0-1.0,"description":"1-2 sentence description","suggested_department":"Department name"}`;
+
+  const res = await fetch(
+    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{ parts: [{ text: prompt }, { inline_data: { mime_type: mimeType, data: base64 } }] }],
+        generationConfig: { temperature: 0.2, responseMimeType: "application/json" }
+      })
+    }
+  );
+  if (!res.ok) {
+    const err = await res.json().catch(() => ({}));
+    throw new Error(err.error?.message || `API error ${res.status}`);
+  }
+  const data = await res.json();
+  const text = data.candidates?.[0]?.content?.parts?.[0]?.text || '{}';
+  const parsed = JSON.parse(text);
+  return {
+    issue_type: parsed.issue_type || 'unknown',
+    severity: parsed.severity || 'medium',
+    confidence: parsed.confidence || 0.75,
+    description: parsed.description || 'Issue detected.',
+    suggested_department: parsed.suggested_department || 'Municipal Corporation',
+    source: 'gemini'
+  };
+}
+
+function simulateDemoAnalysis() {
+  const types = ['pothole', 'garbage', 'road_damage', 'unknown'];
+  const severities = ['low', 'medium', 'high', 'critical'];
+  const descriptions = {
+    pothole: 'A visible pothole approximately 30cm wide detected on the road surface.',
+    garbage: 'Overflowing garbage bin with waste scattered around the area.',
+    road_damage: 'Cracked and damaged road surface requiring resurfacing.',
+    unknown: 'Unclear civic issue detected. Manual inspection recommended.'
+  };
+  const departments = {
+    pothole: 'Roads & Bridges Department',
+    garbage: 'Sanitation & Waste Management',
+    road_damage: 'Public Works Department',
+    unknown: 'General Municipal Services'
+  };
+  const type = types[Math.floor(Math.random() * types.length)];
+  const severity = severities[Math.floor(Math.random() * severities.length)];
+  return {
+    issue_type: type, severity,
+    confidence: 0.7 + Math.random() * 0.25,
+    description: descriptions[type],
+    suggested_department: departments[type],
+    source: 'demo'
+  };
+}
+
+function renderResults(a) {
+  const sevMap = { low: 25, medium: 50, high: 75, critical: 100 };
+  const sevClass = { low: 'sev-low', medium: 'sev-medium', high: 'sev-high', critical: 'sev-critical' };
+  const priorityMap = { low: 'Routine', medium: 'Normal', high: 'Urgent', critical: 'Immediate' };
+
+  document.getElementById('resType').innerHTML = `<span class="issue-badge badge-${a.issue_type}">${a.issue_type.replace('_', ' ')}</span>`;
+  document.getElementById('resSeverity').textContent = a.severity.toUpperCase();
+  const fill = document.getElementById('sevFill');
+  fill.style.width = sevMap[a.severity] + '%';
+  fill.className = 'severity-fill ' + sevClass[a.severity];
+  document.getElementById('resConfidence').textContent = Math.round(a.confidence * 100) + '%';
+  document.getElementById('resPriority').textContent = priorityMap[a.severity];
+  document.getElementById('resDescription').textContent = a.description;
+  document.getElementById('reportBox').textContent = generateReportText(a);
+  document.getElementById('qwenOutput').style.display = 'none';
+}
+
+function generateReportText(a) {
+  const loc = currentLocation;
+  const locText = loc
+    ? `Location: ${loc.area || 'Unknown'}\nCoordinates: ${loc.lat.toFixed(6)}, ${loc.lng.toFixed(6)}\nFull Address: ${loc.address || 'N/A'}`
+    : 'Location: Not captured';
+  return `═══════════════════════════════════════
+  CIVIC SHIELD AI — COMPLAINT REPORT
+═══════════════════════════════════════
+
+Report ID:    CS-${Date.now().toString().slice(-8)}
+Date Filed:   ${new Date().toLocaleString()}
+AI Source:    ${a.source === 'qwen-local' ? 'Local Qwen 3.5:4b' : a.source === 'gemini' ? 'Google Gemini Vision' : 'Demo Mode'}
+
+───────────────────────────────────────
+ISSUE DETAILS
+───────────────────────────────────────
+Type:          ${a.issue_type.replace('_', ' ').toUpperCase()}
+Severity:      ${a.severity.toUpperCase()}
+Priority:      ${a.severity === 'critical' ? 'IMMEDIATE' : a.severity === 'high' ? 'URGENT' : 'NORMAL'}
+Confidence:    ${Math.round(a.confidence * 100)}%
+Department:    ${a.suggested_department}
+
+Description:
+${a.description}
+
+───────────────────────────────────────
+LOCATION
+───────────────────────────────────────
+${locText}
+
+───────────────────────────────────────
+ACTION REQUESTED
+───────────────────────────────────────
+Requesting immediate inspection and remediation of the above issue.
+
+═══════════════════════════════════════`;
+}
+
+/* ---------- Qwen Enhancement ---------- */
+document.getElementById('qwenBtn').addEventListener('click', async () => {
+  if (!currentAnalysis) { toast('Analyze an image first', 'error'); return; }
+  const cfg = getConfig();
+  const output = document.getElementById('qwenOutput');
+  const btn = document.getElementById('qwenBtn');
+
+  btn.disabled = true; btn.textContent = '🧠 Thinking...';
+  output.style.display = 'block';
+  output.textContent = 'Connecting to local Qwen...';
+
+  const prompt = `You are a municipal complaint officer. Rewrite the following civic issue report in a formal, official tone suitable for submission to a city council. Keep all facts, make it professional, and end with a polite request for action. Write 3-5 paragraphs.
+
+Issue: ${currentAnalysis.issue_type.replace('_', ' ')}
+Severity: ${currentAnalysis.severity}
+Description: ${currentAnalysis.description}
+Location: ${currentLocation?.address || 'Not specified'}
+
+Formal complaint:`;
+
+  try {
+    const res = await fetch(cfg.api_url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ model: cfg.model, messages: [{ role: 'user', content: prompt }], stream: false, options: { temperature: 0.6 } })
+    });
+    if (!res.ok) throw new Error(`Ollama error: ${res.status}`);
+    const data = await res.json();
+    const reply = data.message?.content || 'No response received.';
+    output.textContent = reply.slice(0, cfg.max_spoken_chars);
+    toast('Qwen response received', 'success');
+  } catch (err) {
+    output.textContent = `❌ Could not connect to local Qwen.\n\nError: ${err.message}\n\nMake sure:\n1. Ollama is running (ollama serve)\n2. Model installed (ollama pull ${cfg.model})\n3. Page served via http://localhost (not file://)`;
+    toast('Qwen connection failed', 'error');
+  } finally {
+    btn.disabled = false; btn.textContent = '✨ Generate with Qwen';
+  }
+});
+
+/* ---------- Save / Dashboard ---------- */
+document.getElementById('saveBtn').addEventListener('click', saveReport);
+document.getElementById('copyBtn').addEventListener('click', () => {
+  navigator.clipboard.writeText(document.getElementById('reportBox').textContent).then(() => toast('Report copied!', 'success'));
+});
+
+function saveReport() {
+  if (!currentAnalysis) return;
+  const reports = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  reports.unshift({
+    id: Date.now(), image: currentImage.dataUrl, analysis: currentAnalysis,
+    location: currentLocation, status: 'Pending', timestamp: new Date().toISOString()
+  });
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
+  toast('Report saved to dashboard', 'success');
+  switchView('dashboard');
+}
+
+function renderDashboard() {
+  const reports = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const list = document.getElementById('reportList');
+  const empty = document.getElementById('emptyState');
+
+  document.getElementById('statTotal').textContent = reports.length;
+  document.getElementById('statPending').textContent = reports.filter(r => r.status === 'Pending').length;
+  document.getElementById('statProgress').textContent = reports.filter(r => r.status === 'In Progress').length;
+  document.getElementById('statResolved').textContent = reports.filter(r => r.status === 'Resolved').length;
+
+  const filtered = currentFilter === 'all' ? reports : reports.filter(r => r.status === currentFilter);
+
+  if (filtered.length === 0) { list.innerHTML = ''; empty.style.display = 'block'; return; }
+  empty.style.display = 'none';
+
+  list.innerHTML = filtered.map(r => {
+    const statusClass = r.status === 'Pending' ? 'status-pending' : r.status === 'In Progress' ? 'status-progress' : 'status-resolved';
+    const locText = r.location?.area || 'No location';
+    const time = new Date(r.timestamp).toLocaleDateString();
+    const sourceLabel = r.analysis.source === 'qwen-local' ? 'Qwen Local' : r.analysis.source === 'gemini' ? 'Gemini' : 'Demo';
+    return `
+      <div class="report-item">
+        <img src="${r.image}" class="report-thumb" alt="Report" />
+        <div class="report-info">
+          <h4>${r.analysis.issue_type.replace('_', ' ').toUpperCase()} — ${r.analysis.severity.toUpperCase()}</h4>
+          <div class="report-meta">
+            <span>📍 ${locText}</span>
+            <span>📅 ${time}</span>
+            <span>🤖 ${sourceLabel}</span>
+          </div>
+        </div>
+        <div class="report-actions">
+          <select class="status-select ${statusClass}" onchange="updateStatus(${r.id}, this.value)">
+            <option ${r.status === 'Pending' ? 'selected' : ''}>Pending</option>
+            <option ${r.status === 'In Progress' ? 'selected' : ''}>In Progress</option>
+            <option ${r.status === 'Resolved' ? 'selected' : ''}>Resolved</option>
+          </select>
+          <button class="btn btn-ghost btn-sm" onclick="deleteReport(${r.id})">🗑️</button>
+        </div>
+      </div>`;
+  }).join('');
+}
+
+function updateStatus(id, status) {
+  const reports = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+  const r = reports.find(x => x.id === id);
+  if (r) { r.status = status; localStorage.setItem(STORAGE_KEY, JSON.stringify(reports)); renderDashboard(); }
+}
+function deleteReport(id) {
+  if (!confirm('Delete this report?')) return;
+  const reports = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]').filter(r => r.id !== id);
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(reports));
+  renderDashboard();
+  toast('Report deleted', 'success');
+}
+
+document.querySelectorAll('.filter-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    currentFilter = btn.dataset.filter;
+    renderDashboard();
+  });
+});
+
+/* ============================================================
+   LIVE CAMERA + FRAME-CHANGE DETECTION
+   ============================================================ */
+let cameraStream = null;
+let autoDetectInterval = null;
+let lastFrameData = null;
+let lastVisionTime = 0;
+const video = document.getElementById('cameraFeed');
+const canvas = document.getElementById('cameraCanvas');
+const ctx = canvas.getContext('2d', { willReadFrequently: true });
+
+document.getElementById('startCameraBtn').addEventListener('click', startCamera);
+document.getElementById('stopCameraBtn').addEventListener('click', stopCamera);
+document.getElementById('captureBtn').addEventListener('click', captureFrame);
+document.getElementById('autoDetectBtn').addEventListener('click', toggleAutoDetect);
+
+async function startCamera() {
+  const cfg = getConfig();
+  try {
+    cameraStream = await navigator.mediaDevices.getUserMedia({
+      video: { deviceId: cfg.camera_index !== 0 ? { exact: cfg.camera_index } : undefined, width: { ideal: 640 }, height: { ideal: 480 } }
+    });
+    video.srcObject = cameraStream;
+    video.style.display = 'block';
+    document.getElementById('cameraOverlay').classList.add('hidden');
+    document.getElementById('cameraStatus').style.display = 'flex';
+    document.getElementById('cameraStatus').classList.add('live');
+    document.getElementById('cameraStatusText').textContent = 'LIVE';
+    document.getElementById('startCameraBtn').disabled = true;
+    document.getElementById('stopCameraBtn').disabled = false;
+    document.getElementById('captureBtn').disabled = false;
+    document.getElementById('autoDetectBtn').disabled = false;
+    toast('Camera started', 'success');
+  } catch (err) {
+    toast('Camera access denied: ' + err.message, 'error');
+  }
+}
+
+function stopCamera() {
+  if (cameraStream) {
+    cameraStream.getTracks().forEach(t => t.stop());
+    cameraStream = null;
+  }
+  video.style.display = 'none';
+  video.srcObject = null;
+  document.getElementById('cameraOverlay').classList.remove('hidden');
+  document.getElementById('cameraStatus').style.display = 'none';
+  document.getElementById('startCameraBtn').disabled = false;
+  document.getElementById('stopCameraBtn').disabled = true;
+  document.getElementById('captureBtn').disabled = true;
+  document.getElementById('autoDetectBtn').disabled = true;
+  if (autoDetectInterval) { clearInterval(autoDetectInterval); autoDetectInterval = null; }
+  document.getElementById('autoDetectBtn').textContent = ' Toggle Auto-Detect';
+  document.getElementById('changeMeter').classList.remove('active');
+  lastFrameData = null;
+  toast('Camera stopped', 'success');
+}
+
+function captureFrame() {
+  if (!video.videoWidth) return;
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  ctx.drawImage(video, 0, 0);
+  const dataUrl = canvas.toDataURL('image/jpeg', 0.8);
+  currentImage = { dataUrl, name: `camera_${Date.now()}.jpg` };
+  preview.src = dataUrl;
+  preview.style.display = 'block';
+  uploadPrompt.style.display = 'none';
+  uploadZone.classList.add('has-image');
+  analyzeBtn.disabled = false;
+  resetBtn.style.display = 'inline-flex';
+  document.getElementById('results').style.display = 'none';
+  switchView('report');
+  toast('Frame captured — ready to analyze', 'success');
+}
+
+function toggleAutoDetect() {
+  const cfg = getConfig();
+  if (autoDetectInterval) {
+    clearInterval(autoDetectInterval);
+    autoDetectInterval = null;
+    document.getElementById('autoDetectBtn').textContent = '🤖 Toggle Auto-Detect';
+    document.getElementById('changeMeter').classList.remove('active');
+    toast('Auto-detect stopped', 'success');
+    return;
+  }
+
+  document.getElementById('changeMeter').classList.add('active');
+  document.getElementById('autoDetectBtn').textContent = '⏸️ Stop Auto-Detect';
+  toast(`Auto-detect ON (check every ${cfg.frame_check_seconds}s)`, 'success');
+
+  autoDetectInterval = setInterval(() => {
+    if (!video.videoWidth) return;
+    canvas.width = 320; canvas.height = 240; // downscale for speed
+    ctx.drawImage(video, 0, 0, 320, 240);
+    const frame = ctx.getImageData(0, 0, 320, 240).data;
+
+    if (lastFrameData) {
+      let diff = 0;
+      const len = frame.length;
+      for (let i = 0; i < len; i += 16) { // sample every 4th pixel for speed
+        diff += Math.abs(frame[i] - lastFrameData[i]) + Math.abs(frame[i+1] - lastFrameData[i+1]) + Math.abs(frame[i+2] - lastFrameData[i+2]);
+      }
+      const score = (diff / (len / 16)) / 3;
+      document.getElementById('changeValue').textContent = score.toFixed(1);
+      document.getElementById('changeFill').style.width = Math.min(100, score * 2) + '%';
+
+      const now = Date.now();
+      if (score >= cfg.min_change_score && (now - lastVisionTime) > cfg.vision_cooldown_seconds * 1000) {
+        lastVisionTime = now;
+        toast(`🎯 Change detected (score: ${score.toFixed(1)}) — capturing...`, 'success');
+        canvas.width = video.videoWidth; canvas.height = video.videoHeight;
+        ctx.drawImage(video, 0, 0);
+        currentImage = { dataUrl: canvas.toDataURL('image/jpeg', 0.8), name: `auto_${Date.now()}.jpg` };
+        preview.src = currentImage.dataUrl;
+        preview.style.display = 'block';
+        uploadPrompt.style.display = 'none';
+        uploadZone.classList.add('has-image');
+        analyzeBtn.disabled = false;
+        resetBtn.style.display = 'inline-flex';
+        document.getElementById('results').style.display = 'none';
+        switchView('report');
+        analyzeImage();
+      }
+    }
+    lastFrameData = frame;
+  }, cfg.frame_check_seconds * 1000);
+}
+
+/* ---------- Gemini Setup ---------- */
+document.getElementById('saveGeminiBtn').addEventListener('click', () => {
+  const key = document.getElementById('geminiKeyInput').value.trim();
+  if (!key) return toast('Enter a valid key', 'error');
+  localStorage.setItem(GEMINI_KEY_STORAGE, key);
+  toast('Gemini key saved', 'success');
+  updateBanners();
+});
+document.getElementById('clearGeminiBtn').addEventListener('click', () => {
+  localStorage.removeItem(GEMINI_KEY_STORAGE);
+  document.getElementById('geminiKeyInput').value = '';
+  toast('Gemini key cleared', 'success');
+  updateBanners();
+});
+
+/* ---------- Banner Logic ---------- */
+function updateBanners() {
+  const cfg = getConfig();
+  const hasQwenConfig = cfg.api_url.length > 0;
+  const hasGemini = !!localStorage.getItem(GEMINI_KEY_STORAGE);
+
+  document.getElementById('demoBanner').classList.toggle('hidden', hasQwenConfig || hasGemini);
+
+  const liveBanner = document.getElementById('liveBanner');
+  const liveText = document.getElementById('liveBannerText');
+  if (hasQwenConfig || hasGemini) {
+    liveBanner.classList.remove('hidden');
+    const parts = [];
+    if (hasQwenConfig) parts.push(`Local ${cfg.model}`);
+    if (hasGemini) parts.push('Gemini Vision');
+    liveText.innerHTML = `<strong>Live AI Active:</strong> ${parts.join(' + ')} connected.`;
+  } else {
+    liveBanner.classList.add('hidden');
+  }
+}
+
+/* ---------- Init ---------- */
+function init() {
+  document.getElementById('geminiKeyInput').value = localStorage.getItem(GEMINI_KEY_STORAGE) || '';
+  loadConfigUI();
+  updateBanners();
+}
+init();
+</script>
+</body>
+</html>
