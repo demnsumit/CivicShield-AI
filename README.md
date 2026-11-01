@@ -36,8 +36,6 @@ their local communities.
 ## Technology Stack
 
 - HTML
-- CSS
-- JavaScript
 
 ## Project Purpose
 
